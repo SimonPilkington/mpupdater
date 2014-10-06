@@ -38,7 +38,7 @@ namespace mpupdater
 		{
 			get
 			{
-				return @"MPC-HC\.(\d+)\.(\d+)\.(\d+)\.(\d+)\.x86.7z";
+				return @"MPC-HC\.(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?\.x86.7z";
 			}
 		}
 

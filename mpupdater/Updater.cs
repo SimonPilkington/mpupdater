@@ -29,8 +29,11 @@ namespace mpupdater
 			{
 				if (!Installed)
 					return "None";
-
-				return String.Format("{0}.{1}.{3}.{2}", Major, Minor, Private, Build);
+				
+				if (Private == -1)
+					return String.Format("{0}.{1}.{2}", Major, Minor, Build);
+				else
+					return String.Format("{0}.{1}.{3}.{2}", Major, Minor, Private, Build);
 			}
 		}
 	
@@ -85,7 +88,7 @@ namespace mpupdater
 			{
 				output.Major = int.Parse(versionInfo.Groups[1].Value);
 				output.Minor = int.Parse(versionInfo.Groups[2].Value);
-				output.Private = int.Parse(versionInfo.Groups[4].Value);
+				output.Private = versionInfo.Groups[4].Value == "" ? -1 : int.Parse(versionInfo.Groups[4].Value);
 				output.Build = int.Parse(versionInfo.Groups[3].Value);
 				output.Installed = true;
 			}
