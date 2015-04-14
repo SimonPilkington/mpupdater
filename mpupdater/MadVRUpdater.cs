@@ -73,20 +73,67 @@ namespace mpupdater
 			}
 		}
 
-		public static void RunUninstallScript()
-		{
-			int exitCode = IOExt.RunProcess(MadVRPath + "uninstall.bat");
+#if WIN64
+		const string madVrFilename = "madVR64.ax";
+#else
+		const string madVrFilename = "madVR.ax";
+#endif
 
-			if (exitCode != 0)
-				throw new UpdateCheckException("Something went wrong with madVR uninstallation. (Exit code: " + exitCode + ")");
+		public static void Unregister()
+		{
+			string oldDir = Directory.GetCurrentDirectory();
+			
+			try
+			{
+				Directory.SetCurrentDirectory(MadVRPath);
+				using (var madVrSvr64 = new RegSvr(madVrFilename))
+				{
+					madVrSvr64.Unregister();
+				}
+			}
+			catch (Exception e)
+			{
+				if (e is IOException)
+					throw new UpdateCheckException("Failed to open madVR dll.");
+
+				if (e is ArgumentException)
+					throw new UpdateCheckException("Something is wrong with the madVR dll?");
+
+				throw;
+			}
+			finally
+			{
+				Directory.SetCurrentDirectory(oldDir);
+			}
+
 		}
 
-		public static void RunInstallScript()
+		public static void Register()
 		{
-			int exitCode = IOExt.RunProcess(MadVRPath + "install.bat");
+			string oldDir = Directory.GetCurrentDirectory();
+			try
+			{
+				Directory.SetCurrentDirectory(MadVRPath);
 
-			if (exitCode != 0)
-				throw new UpdateCheckException("Something went wrong with madVR installation. (Exit code: " + exitCode + ")");
+				using (var madVrSvr64 = new RegSvr(madVrFilename))
+				{
+					madVrSvr64.Register();
+				}
+			}
+			catch (Exception e)
+			{
+				if (e is IOException)
+					throw new UpdateCheckException("Failed to open madVR dll.");
+
+				if (e is ArgumentException)
+					throw new UpdateCheckException("Something is wrong with the madVR dll?");
+
+				throw;
+			}
+			finally
+			{
+				Directory.SetCurrentDirectory(oldDir);
+			}
 		}
 
 		public void UpdateInstalledVersion()
@@ -102,8 +149,8 @@ namespace mpupdater
 
 			if (InstalledVersion.Installed)
 			{
-				Console.WriteLine("Uninstalling old version...");
-				RunUninstallScript();
+				Console.WriteLine("Unregistering old version...");
+				Unregister();
 			}
 
 			const string fileName = "madVR.zip";
@@ -118,10 +165,18 @@ namespace mpupdater
 			try
 			{
 				ZipFile.ExtractToDirectory(fileName, tempDir);
-				IOExt.MoveDirWithOverwrite(tempDir, MadVRPath);
 
-				Console.WriteLine("Installing new version...");
-				RunInstallScript();
+				try
+				{
+					IOExt.MoveDirWithOverwrite(tempDir, MadVRPath);
+				}
+				catch (UnauthorizedAccessException)
+				{
+					throw new UpdateCheckException("Could not overwrite old version. Is the player running?");
+				}
+				
+				Console.WriteLine("Registering new version...");
+				Register();
 				UpdateInstalledVersion();
 			}
 			catch (UpdaterException)
@@ -131,7 +186,11 @@ namespace mpupdater
 			}
 			finally
 			{
-				File.Delete(fileName);
+				if (File.Exists(fileName))
+					File.Delete(fileName);
+
+				if (Directory.Exists(tempDir))
+					Directory.Delete(tempDir, true);
 			}
 
 			Console.WriteLine("Done.");

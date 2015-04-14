@@ -89,7 +89,8 @@ namespace mpupdater
 
 			foreach (var dir in subDirs)
 			{
-				MoveDirWithOverwrite(dir, Path.Combine(dstPath, Path.GetFileName(dir)));
+				string subDirPath = Path.Combine(dstPath, Path.GetFileName(dir));
+				MoveDirWithOverwrite(dir, subDirPath);
 				
 				//Console.WriteLine("recursively move " + dir + " to " + Path.Combine(dstPath, Path.GetFileName(dir)));
 			}

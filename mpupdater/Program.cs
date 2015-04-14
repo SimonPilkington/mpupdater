@@ -12,7 +12,7 @@ namespace mpupdater
 	{
 		static void DoUpdate(string name, Updater updater)
 		{
-			Console.WriteLine("=== " + name + "===");
+			Console.WriteLine("=== " + name + " ===");
 
 			try
 			{
@@ -33,6 +33,12 @@ namespace mpupdater
 
 		static void Main(string[] args)
 		{
+#if WIN64
+			Console.WriteLine("Video nonsense updated - x64 version" + Environment.NewLine);
+#else 
+			Console.WriteLine("Video nonsense updated - x86 version" + Environment.NewLine);
+#endif
+
 			Updater[] updaters = new Updater[] {new MediaPlayerUpdater(), new MadVRUpdater(), new SubFilterUpdater()};
 
 			DoUpdate("MPC-HC", updaters[0]);

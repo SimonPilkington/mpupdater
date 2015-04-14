@@ -35,4 +35,14 @@ namespace mpupdater
 
 		protected SevenZipException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
 	}
+
+	[Serializable()]
+	public class ServerRegException : UpdaterException
+	{
+		public ServerRegException() : base() { }
+		public ServerRegException(string message) : base(message) { }
+		public ServerRegException(string message, System.Exception inner) : base(message, inner) { }
+
+		protected ServerRegException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+	}
 }

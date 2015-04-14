@@ -48,20 +48,46 @@ namespace mpupdater
 			{ }
 		}
 
-		public static void RunUninstallScript()
+		public static void Unregister()
 		{
-			int exitCode = IOExt.RunProcess(Path.Combine(SubFilterPath, "Uninstall_XySubFilter.bat"));
+			try
+			{
+				using (var xySvr = new RegSvr(Path.Combine(SubFilterPath, "XySubFilter.dll")))
+				{
+					xySvr.Unregister();
+				}
+			}
+			catch (Exception e)
+			{
+				if (e is IOException)
+					throw new UpdateCheckException("Failed to open xySubFilter dll.");
 
-			if (exitCode != 0)
-				throw new UpdateCheckException("Something went wrong with madVR uninstallation. (Exit code: " + exitCode + ")");
+				if (e is ArgumentException)
+					throw new UpdateCheckException("Something is wrong with the xySubFilter dll?");
+
+				throw;
+			}
 		}
 
-		public static void RunInstallScript()
+		public static void Register()
 		{
-			int exitCode = IOExt.RunProcess(Path.Combine(SubFilterPath, "Install_XySubFilter.bat"));
+			try
+			{
+				using (var xySvr = new RegSvr(Path.Combine(SubFilterPath, "XySubFilter.dll")))
+				{
+					xySvr.Register();
+				}
+			}
+			catch (Exception e)
+			{
+				if (e is IOException)
+					throw new UpdateCheckException("Failed to open xySubFilter dll.");
 
-			if (exitCode != 0)
-				throw new UpdateCheckException("Something went wrong with madVR installation. (Exit code: " + exitCode + ")");
+				if (e is ArgumentException)
+					throw new UpdateCheckException("Something is wrong with the xySubFilter dll?");
+
+				throw;
+			}
 		}
 
 		public override void Update()
@@ -71,11 +97,14 @@ namespace mpupdater
 
 			if (InstalledVersion.Installed)
 			{
-				Console.WriteLine("Uninstalling old version...");
-				RunUninstallScript();
+				Console.WriteLine("Unregistering old version...");
+				Unregister();
 			}
-
+#if WIN64
+			string url = CurrentVersion + "/XySubFilter_" + CurrentVersion + "_x64_BETA2.zip";
+#else
 			string url = CurrentVersion + "/XySubFilter_" + CurrentVersion + "_x86_BETA2.zip";
+#endif
 
 			Console.WriteLine("Downloading update...");
 			DownloadUpdateWithProgress(url);
@@ -88,10 +117,18 @@ namespace mpupdater
 			try
 			{
 				ZipFile.ExtractToDirectory(fileName, tempDir);
-				IOExt.MoveDirWithOverwrite(tempDir, SubFilterPath);
 
-				Console.WriteLine("Installing new version...");
-				RunInstallScript();				
+				try 
+				{
+					IOExt.MoveDirWithOverwrite(tempDir, SubFilterPath);
+				}
+				catch (UnauthorizedAccessException)
+				{
+					throw new UpdateCheckException("Could not overwrite old version. Is the player running?");
+				}
+
+				Console.WriteLine("Registering new version...");
+				Register();				
 			}
 			catch (UpdaterException)
 			{
@@ -100,7 +137,11 @@ namespace mpupdater
 			}
 			finally
 			{
-				File.Delete(fileName);
+				if (File.Exists(fileName))
+					File.Delete(fileName);
+
+				if (Directory.Exists(tempDir))
+					Directory.Delete(tempDir, true);
 			}
 			
 			Console.WriteLine("Done.");
