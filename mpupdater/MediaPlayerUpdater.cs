@@ -86,7 +86,8 @@ namespace mpupdater
 
 			try
 			{
-				IOExt.ExtractSevenZip(fileName);
+				var ext = new SevenZip.SevenZipExtractor(fileName);
+				ext.ExtractArchive(".");
 				IOExt.MoveDirWithOverwrite(Path.GetFileNameWithoutExtension(fileName), MediaPlayerPath);
 			}
 			finally
