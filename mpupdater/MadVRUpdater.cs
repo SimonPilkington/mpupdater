@@ -179,11 +179,6 @@ namespace mpupdater
 				Register();
 				UpdateInstalledVersion();
 			}
-			catch (UpdaterException)
-			{
-				Directory.Delete(MadVRPath, true);
-				throw;
-			}
 			finally
 			{
 				if (File.Exists(fileName))

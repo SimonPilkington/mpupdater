@@ -41,7 +41,9 @@ namespace mpupdater
 		protected Version InstalledVersion;
 
 		private const string UpdateURL = "http://localhost/";
-		protected virtual string GetUpdateURL
+        object consoleLock = new object();
+
+        protected virtual string GetUpdateURL
 		{
 			get
 			{
@@ -79,7 +81,7 @@ namespace mpupdater
 		protected static void ExtractVersionFromMatch(Match versionInfo, ref Version output)
 		{
 			if (versionInfo == null)
-				throw new ArgumentException("versionInfo");
+				throw new ArgumentNullException("versionInfo");
 
 			if (!versionInfo.Success)
 				throw new UpdateCheckException("Couldn't get current version.");
@@ -103,7 +105,7 @@ namespace mpupdater
 			using (var downloader = new WebClient())
 			{
 				var completeEvent = new ManualResetEventSlim();
-				var consoleLock = new object();
+				
 				Exception error = null;
 
 				int maxPercent = 0;
@@ -122,7 +124,11 @@ namespace mpupdater
 
 				downloader.DownloadFileCompleted += (sender, e) =>
 				{
-					Console.WriteLine();
+                    lock (consoleLock)
+                    {
+                        Console.WriteLine();
+                    }
+
 					error = e.Error;
 					completeEvent.Set();
 				};
@@ -170,5 +176,8 @@ namespace mpupdater
 		}
 
 		public abstract void Update();
-	}
+#if false
+        public abstract void Remove(); 
+#endif
+    }
 }

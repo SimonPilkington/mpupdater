@@ -88,7 +88,16 @@ namespace mpupdater
 			{
 				var ext = new SevenZip.SevenZipExtractor(fileName);
 				ext.ExtractArchive(".");
-				IOExt.MoveDirWithOverwrite(Path.GetFileNameWithoutExtension(fileName), MediaPlayerPath);
+
+                try
+                {
+                    IOExt.MoveDirWithOverwrite(Path.GetFileNameWithoutExtension(fileName), MediaPlayerPath);
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    throw new UpdateCheckException("Could not overwrite old version. Is the player running?");
+                }
+                
 			}
 			finally
 			{
@@ -98,5 +107,12 @@ namespace mpupdater
 			
 			Console.WriteLine("Done.");
 		}
-	}
+
+#if false
+        public override void Remove()
+        {
+            Directory.Delete(MediaPlayerPath, true);
+        } 
+#endif
+    }
 }

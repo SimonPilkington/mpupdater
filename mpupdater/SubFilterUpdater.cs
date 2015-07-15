@@ -130,11 +130,6 @@ namespace mpupdater
 				Console.WriteLine("Registering new version...");
 				Register();				
 			}
-			catch (UpdaterException)
-			{
-				Directory.Delete(SubFilterPath, true);
-				throw;
-			}
 			finally
 			{
 				if (File.Exists(fileName))
