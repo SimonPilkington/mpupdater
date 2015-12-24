@@ -44,7 +44,7 @@ namespace mpupdater
 		{
 			get
 			{
-				return @"MPC-HC\.(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?\.x64.7z";
+				return @"MPC-HC\.(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?\.x64\.VS2015\.7z";
 			}
 		}
 #else
@@ -52,12 +52,12 @@ namespace mpupdater
 		{
 			get
 			{
-				return @"MPC-HC\.(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?\.x86.7z";
+				return @"MPC-HC\.(\d+)\.(\d+)\.(\d+)(?:\.(\d+))?\.x86\.VS2015\.7z";
 			}
 		}
 #endif
 
-		protected override void GetInstalledVersion()
+        protected override void GetInstalledVersion()
 		{
 			try
 			{
@@ -74,12 +74,12 @@ namespace mpupdater
 				return;
 
 #if WIN64
-			string fileName = "MPC-HC." + CurrentVersion + ".x64.7z";
+			string fileName = "MPC-HC." + CurrentVersion + ".x64.VS2015.7z";
 #else
-			string fileName = "MPC-HC." + CurrentVersion + ".x86.7z";
+			string fileName = "MPC-HC." + CurrentVersion + ".x86.VS2015.7z";
 #endif
 
-			Console.WriteLine("Downloading update...");
+            Console.WriteLine("Downloading update...");
 			DownloadUpdateWithProgress(fileName);
 						
 			Console.WriteLine("Extracting...");

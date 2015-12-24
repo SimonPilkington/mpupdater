@@ -33,7 +33,7 @@ namespace mpupdater
 		{
 			get
 			{
-				return @"https://code.google.com/p/xy-vsfilter/wiki/Downloads";
+				return @"http://forum.doom9.org/showthread.php?t=168282";
 			}
 		}
 
@@ -101,9 +101,9 @@ namespace mpupdater
 				Unregister();
 			}
 #if WIN64
-			string url = CurrentVersion + "/XySubFilter_" + CurrentVersion + "_x64_BETA2.zip";
+			string url = CurrentVersion + "/XySubFilter_" + CurrentVersion + "_x64_BETA3.zip";
 #else
-			string url = CurrentVersion + "/XySubFilter_" + CurrentVersion + "_x86_BETA2.zip";
+			string url = CurrentVersion + "/XySubFilter_" + CurrentVersion + "_x86_BETA3.zip";
 #endif
 
 			Console.WriteLine("Downloading update...");
