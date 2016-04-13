@@ -66,7 +66,7 @@ namespace mpupdater
 
 		protected abstract void GetInstalledVersion();
 
-		protected void GetCurrentVersion()
+		protected void GetAvailableVersion()
 		{
 			Match versionInfo;
 			using (var client = new WebClient())
@@ -84,14 +84,14 @@ namespace mpupdater
 				throw new ArgumentNullException("versionInfo");
 
 			if (!versionInfo.Success)
-				throw new UpdateCheckException("Couldn't get current version.");
+				throw new UpdateCheckException("Couldn't get available version.");
 
 			try
 			{
 				output.Major = int.Parse(versionInfo.Groups[1].Value);
 				output.Minor = int.Parse(versionInfo.Groups[2].Value);
-				output.Private = versionInfo.Groups[4].Value == "" ? -1 : int.Parse(versionInfo.Groups[4].Value);
 				output.Build = int.Parse(versionInfo.Groups[3].Value);
+				output.Private = versionInfo.Groups[4].Value == "" ? -1 : int.Parse(versionInfo.Groups[4].Value);
 				output.Installed = true;
 			}
 			catch (FormatException)
@@ -144,7 +144,7 @@ namespace mpupdater
 		protected bool PrepareUpdate()
 		{
 			GetInstalledVersion();
-			GetCurrentVersion();
+			GetAvailableVersion();
 
 			if (!InstalledVersion.Installed)
 				return true;
