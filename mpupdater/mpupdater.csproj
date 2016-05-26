@@ -100,13 +100,13 @@
   <ItemGroup>
     <Compile Include="ConsoleExt.cs" />
     <Compile Include="IOExt.cs" />
-    <Compile Include="MadVRUpdater.cs" />
-    <Compile Include="MediaPlayerUpdater.cs" />
+    <Compile Include="Updater\MadVRUpdater.cs" />
+    <Compile Include="Updater\MediaPlayerUpdater.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RegSvr.cs" />
-    <Compile Include="SubFilterUpdater.cs" />
-    <Compile Include="Updater.cs" />
+    <Compile Include="Updater\SubFilterUpdater.cs" />
+    <Compile Include="Updater\Updater.cs" />
     <Compile Include="UpdaterException.cs" />
   </ItemGroup>
   <ItemGroup>
