@@ -1,49 +1,49 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 
 namespace mpupdater
 {
 	class Program
 	{
-		static void DoUpdate(string name, Updater updater)
-		{
-			Console.WriteLine("=== " + name + " ===");
-
-			try
-			{
-				updater.Update();
-			}
-			catch (Exception e)
-			{
-				if (e is UpdaterException || e is WebException || e is IOException)
-					Console.WriteLine("Update failed: " + e.Message);
-				else
-					throw;
-			}
-			finally
-			{
-				Console.WriteLine();
-			}
-		}
-
 		static void Main(string[] args)
 		{
+			Console.CursorVisible = false;
+
 #if WIN64
-			Console.WriteLine("Video nonsense updater - version " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + " x64"+ Environment.NewLine);
+			string architecture = "x64";
 #else
-			Console.WriteLine("Video nonsense updater - version " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version + " x86"+ Environment.NewLine);
+			string architecture = "x86";
 #endif
+			Console.Title = $"Video nonsense updater";
+			Console.WriteLine($"Video nonsense updater - version {Assembly.GetExecutingAssembly().GetName().Version} {architecture}");
+			Console.WriteLine();
 
-            Updater[] updaters = new Updater[] {new MediaPlayerUpdater(), new MadVRUpdater(), new SubFilterUpdater()};
+			IUpdater[] updaters = new IUpdater[] { new MediaPlayerUpdater(), new MadVRUpdater(), new SubFilterUpdater() };
 
-			DoUpdate("MPC-HC", updaters[0]);
-			DoUpdate("madVR", updaters[1]);
-			DoUpdate("XySubFilter", updaters[2]);
+			var testController = new AsyncUpdateController(updaters);
+
+#if !DEBUG
+			try
+			{
+#endif
+				testController.AssignDefaultCallbacks();
+				testController.CheckUpdatesAsync().Wait();
+				testController.DownloadAndInstallUpdatesAsync().Wait();
+#if !DEBUG
+			}
+			catch (AggregateException x)
+			{
+				Console.Error.WriteLine("An unhandled exception occurred. Details have been written to error.txt in the current directory.");
+				using (var writer = new System.IO.StreamWriter("error.txt"))
+				{
+					foreach (var innx in x.InnerExceptions)
+					{
+						writer.WriteLine(x);
+						writer.WriteLine(x.StackTrace);
+					}
+				}
+			}
+#endif
 
 			Console.ReadKey();
 		}

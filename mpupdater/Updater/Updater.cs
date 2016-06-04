@@ -1,183 +1,193 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text;
+using System.Runtime.ExceptionServices;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace mpupdater
 {
-	public abstract class Updater
+	public abstract class Updater : IUpdater
 	{
-		public struct Version
+		#region Enums
+		public enum UpdaterState
 		{
-			public int Major;
-			public int Minor;
-			public int Private;
-			public int Build;
-
-			public bool Installed
-			{
-				get;
-				set;
-			}
-
-			public override string ToString()
-			{
-				if (!Installed)
-					return "None";
-				
-				if (Private == -1)
-					return String.Format("{0}.{1}.{2}", Major, Minor, Build);
-				else
-					return String.Format("{0}.{1}.{3}.{2}", Major, Minor, Private, Build);
-			}
+			Pending,
+			Checked,
+			Finished
 		}
-	
-		protected Version CurrentVersion;
-		protected Version InstalledVersion;
 
-		private const string UpdateURL = "http://localhost/";
-        object consoleLock = new object();
-
-        protected virtual string GetUpdateURL
+		#endregion
+		#region Properties
+		public UpdaterState State
+		{
+			get;
+			private set;
+		}
+		
+		private Version _availableVersion;
+		public Version AvailableVersion
 		{
 			get
 			{
-				return UpdateURL;
+				if (State > UpdaterState.Pending)
+					return _availableVersion;
+
+				throw new InvalidOperationException("Value unavailable. CheckUpdate has not been called.");
 			}
+			protected set { _availableVersion = value; }
 		}
 
-		protected virtual string GetVersionURL
+		private Version _installedVersion;
+		public Version InstalledVersion
 		{
 			get
 			{
-				return UpdateURL;
+				if (State > UpdaterState.Pending)
+					return _installedVersion;
+
+				throw new InvalidOperationException("Value unavailable. CheckUpdate has not been called.");
+			}
+			protected set { _installedVersion = value; }
+		}
+		
+		public bool UpdateAvailable
+		{
+			get
+			{
+				if (State > UpdaterState.Pending)
+					return AvailableVersion > (InstalledVersion);
+
+				throw new InvalidOperationException("Update check has not been performed. Call CheckUpdate first.");
 			}
 		}
 
-		protected abstract string GetVersionRegexPattern
+		public abstract string Name { get; }
+		protected virtual string UpdateRootUrl => "http://localhost/";
+		protected abstract string UpdateRelativeUrl { get; }
+		protected virtual string VersionUrl => "http://localhost/";
+		public string AbsoluteUpdateUrl => Path.Combine(UpdateRootUrl, UpdateRelativeUrl);
+
+		/// <summary>
+		/// Prefix to be used in searching the resource for the available version. Uses regex syntax.
+		/// </summary>
+		protected virtual string VersionSearchPrefix => string.Empty;
+		#endregion
+		
+		public Updater()
 		{
-			 get;
+			_installedVersion = FileVersion.Zero;
+			_availableVersion = FileVersion.Zero;
+
+			State = UpdaterState.Pending;
 		}
 
 		protected abstract void GetInstalledVersion();
 
-		protected void GetAvailableVersion()
+		protected virtual void GetAvailableVersion()
 		{
-			Match versionInfo;
-			using (var client = new WebClient())
-			{
-				string pageData = client.DownloadString(GetVersionURL);
-				versionInfo = Regex.Match(pageData, GetVersionRegexPattern);
-			}
-
-			ExtractVersionFromMatch(versionInfo, ref CurrentVersion);
-		}
-
-		protected static void ExtractVersionFromMatch(Match versionInfo, ref Version output)
-		{
-			if (versionInfo == null)
-				throw new ArgumentNullException("versionInfo");
-
-			if (!versionInfo.Success)
-				throw new UpdateCheckException("Couldn't get available version.");
-
 			try
 			{
-				output.Major = int.Parse(versionInfo.Groups[1].Value);
-				output.Minor = int.Parse(versionInfo.Groups[2].Value);
-				output.Build = int.Parse(versionInfo.Groups[3].Value);
-				output.Private = versionInfo.Groups[4].Value == "" ? -1 : int.Parse(versionInfo.Groups[4].Value);
-				output.Installed = true;
+				AvailableVersion = FileVersion.FromWebResource(VersionUrl, VersionSearchPrefix);
 			}
-			catch (FormatException)
+			catch (WebException x)
 			{
-				throw new UpdateCheckException("Somehow failed to parse " + versionInfo.Value + " for integers.");
+				throw new UpdaterException(x.Message, x);
+			}
+			catch (FormatException x)
+			{
+				throw new UpdaterException("Failed to parse available version. The resource may have changed or moved.", x);
 			}
 		}
+		
+		protected virtual bool PerformPreInstall => false;
+		/// <summary>
+		/// Perfmorm pre-install actions. (ex. Unregistering existing version of a COM server.) (Optional.)
+		/// </summary>
+		protected virtual void PreInstallAction()
+		{ }
 
-		protected void DownloadUpdateWithProgress(string fileName)
-		{
-			using (var downloader = new WebClient())
-			{
-				var completeEvent = new ManualResetEventSlim();
-				
-				Exception error = null;
+		/// <summary>
+		/// Install the update.
+		/// </summary>
+		/// <param name="updateDataStream">The stream containing update data.</param>
+		protected abstract void Install(Stream updateDataStream);
 
-				int maxPercent = 0;
-				downloader.DownloadProgressChanged += (sender, e) =>
-				{
-					if (e.ProgressPercentage > maxPercent)
-						maxPercent = e.ProgressPercentage;
-					else
-						return;
+		protected virtual bool PerformPostInstall => false;
+		/// <summary>
+		/// Perfmorm post-install actions. (ex. Registering a COM server.) (Optional.)
+		/// </summary>
+		protected virtual void PostInstallAction()
+		{ }
 
-					lock (consoleLock)
-					{
-						ConsoleExt.DrawProgressBar(e.ProgressPercentage, 25, '=');
-					}
-				};
-
-				downloader.DownloadFileCompleted += (sender, e) =>
-				{
-                    lock (consoleLock)
-                    {
-                        Console.WriteLine();
-                    }
-
-					error = e.Error;
-					completeEvent.Set();
-				};
-
-				downloader.DownloadFileAsync(new Uri(GetUpdateURL + fileName), Path.GetFileName(fileName));
-				completeEvent.Wait();
-
-				if (error != null)
-					throw error;
-			}
-		}
-
-		protected bool PrepareUpdate()
+		public void CheckUpdate()
 		{
 			GetInstalledVersion();
 			GetAvailableVersion();
 
-			if (!InstalledVersion.Installed)
-				return true;
+			State = UpdaterState.Checked;
 
-			if (CurrentVersion.Major > InstalledVersion.Major ||
-				(CurrentVersion.Major == InstalledVersion.Major && CurrentVersion.Minor > InstalledVersion.Minor) ||
-				(CurrentVersion.Major == InstalledVersion.Major && CurrentVersion.Minor == InstalledVersion.Minor && CurrentVersion.Build > InstalledVersion.Build) ||
-				(CurrentVersion.Major == InstalledVersion.Major && CurrentVersion.Minor == InstalledVersion.Minor && CurrentVersion.Build == InstalledVersion.Build && CurrentVersion.Private > InstalledVersion.Private))
-				return true;
-
-			return false;
+			OnUpdateCheckFinished();
 		}
 
-		protected bool CheckUpdate()
+		public void Execute(Stream updateDataStream)
 		{
-			bool updateAvailable = PrepareUpdate();
+			if (State < UpdaterState.Checked)
+				throw new InvalidOperationException("Trying to execute update before update check.");
 
-			Console.WriteLine("Installed version: " + InstalledVersion);
-			Console.WriteLine("Available version: " + CurrentVersion);
+			if (State == UpdaterState.Finished)
+				throw new InvalidOperationException("Update was already performed.");
 
-			if (!updateAvailable)
+			if (PerformPreInstall)
 			{
-				Console.WriteLine("No update.");
-				return false;
+				OnPerformingPreInstallActions();
+				PreInstallAction();
 			}
 
-			Console.WriteLine("Update found.");
-			return true;
+			OnStartingInstall();
+			using (updateDataStream)
+				Install(updateDataStream);
+
+			if (PerformPostInstall)
+			{
+				OnPerformingPostInstallActions();
+				PostInstallAction();
+			}
+
+			State = UpdaterState.Finished;
+			OnUpdateFinished();
 		}
 
-		public abstract void Update();
-#if false
-        public abstract void Remove(); 
-#endif
-    }
+		#region Events
+		public event EventHandler<UpdateCheckFinishedEventArgs> UpdateCheckFinished;
+		public event EventHandler PerformingPreInstallActions;
+		public event EventHandler StartingInstall;
+		public event EventHandler PerformingPostInstallActions;
+		public event EventHandler UpdateFinished;
+
+		protected virtual void OnUpdateCheckFinished()
+		{
+			UpdateCheckFinished?.Invoke(this, new UpdateCheckFinishedEventArgs(InstalledVersion, AvailableVersion));
+		}
+
+		protected virtual void OnPerformingPreInstallActions()
+		{
+			PerformingPreInstallActions?.Invoke(this, EventArgs.Empty);
+		}
+
+		protected virtual void OnStartingInstall()
+		{
+			StartingInstall?.Invoke(this, EventArgs.Empty);
+		}
+
+		protected virtual void OnPerformingPostInstallActions()
+		{
+			PerformingPostInstallActions?.Invoke(this, EventArgs.Empty);
+		}
+
+		protected virtual void OnUpdateFinished()
+		{
+			UpdateFinished?.Invoke(this, EventArgs.Empty);
+		}
+		#endregion
+	}
 }

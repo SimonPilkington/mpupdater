@@ -1,145 +1,35 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace mpupdater
 {
-	public sealed class SubFilterUpdater : Updater
+	public sealed class SubFilterUpdater : ComFilterUpdater
 	{
-		const string SubFilterDll = "XySubFilter.dll";
-		const string SubFilterPath = @"XySubFilter\";
+		#region Properties
+		protected override string filterDll => "XySubFilter.dll";
+		protected override string filterPath => "./XySubFilter";
 
-		protected override string GetUpdateURL
-		{
-			get
-			{
-				return @"https://github.com/Cyberbeing/xy-VSFilter/releases/download/";
-			}
-		}
+		public override string Name => "xySubFilter";
+#if !DEBUG_NET
+		protected override string UpdateRootUrl => "https://github.com/Cyberbeing/xy-VSFilter/releases/download/";
+		protected override string VersionUrl => "http://forum.doom9.org/showthread.php?t=168282"; 
+#endif
 
-		protected override string GetVersionRegexPattern
-		{
-			get
-			{
-				return @"XySubFilter beta version is:.+?(\d+)\.(\d+)\.(\d+)\.(\d+)";
-			}
-		}
+		protected override string VersionSearchPrefix => @"XySubFilter beta version is:.+?";
 
-		protected override string GetVersionURL
-		{
-			get
-			{
-				return @"http://forum.doom9.org/showthread.php?t=168282";
-			}
-		}
+#if WIN64
+		protected override string UpdateRelativeUrl => $"{AvailableVersion}/XySubFilter_{AvailableVersion}_x64_BETA3.zip";
+#else
+		protected override string UpdateRelativeUrl => $"{AvailableVersion}/XySubFilter_{AvailableVersion}_x86_BETA3.zip";
+#endif
+		#endregion
 
 		protected override void GetInstalledVersion()
 		{
-			try
-			{
-				IOExt.GetFileVersion(Path.Combine(SubFilterPath, SubFilterDll), out InstalledVersion.Major, out InstalledVersion.Minor, out InstalledVersion.Private, out InstalledVersion.Build);
-				InstalledVersion.Installed = true;
-			}
-			catch (FileNotFoundException)
-			{ }
-		}
-
-		public static void Unregister()
-		{
-			try
-			{
-				using (var xySvr = new RegSvr(Path.Combine(SubFilterPath, "XySubFilter.dll")))
-				{
-					xySvr.Unregister();
-				}
-			}
-			catch (Exception e)
-			{
-				if (e is IOException)
-					throw new UpdateCheckException("Failed to open xySubFilter dll.");
-
-				if (e is ArgumentException)
-					throw new UpdateCheckException("Something is wrong with the xySubFilter dll?");
-
-				throw;
-			}
-		}
-
-		public static void Register()
-		{
-			try
-			{
-				using (var xySvr = new RegSvr(Path.Combine(SubFilterPath, "XySubFilter.dll")))
-				{
-					xySvr.Register();
-				}
-			}
-			catch (Exception e)
-			{
-				if (e is IOException)
-					throw new UpdateCheckException("Failed to open xySubFilter dll.");
-
-				if (e is ArgumentException)
-					throw new UpdateCheckException("Something is wrong with the xySubFilter dll?");
-
-				throw;
-			}
-		}
-
-		public override void Update()
-		{
-			if (!CheckUpdate())
-				return;
-
-			if (InstalledVersion.Installed)
-			{
-				Console.WriteLine("Unregistering old version...");
-				Unregister();
-			}
-#if WIN64
-			string url = CurrentVersion + "/XySubFilter_" + CurrentVersion + "_x64_BETA3.zip";
-#else
-			string url = CurrentVersion + "/XySubFilter_" + CurrentVersion + "_x86_BETA3.zip";
-#endif
-
-			Console.WriteLine("Downloading update...");
-			DownloadUpdateWithProgress(url);
-
-			Console.WriteLine("Extracting...");
-
-			string fileName = Path.GetFileName(url);
-			const string tempDir = "SubFilter_temp";
-			
-			try
-			{
-				ZipFile.ExtractToDirectory(fileName, tempDir);
-
-				try 
-				{
-					IOExt.MoveDirWithOverwrite(tempDir, SubFilterPath);
-				}
-				catch (UnauthorizedAccessException)
-				{
-					throw new UpdateCheckException("Could not overwrite old version. Is the player running?");
-				}
-
-				Console.WriteLine("Registering new version...");
-				Register();				
-			}
-			finally
-			{
-				if (File.Exists(fileName))
-					File.Delete(fileName);
-
-				if (Directory.Exists(tempDir))
-					Directory.Delete(tempDir, true);
-			}
-			
-			Console.WriteLine("Done.");
+			string path = Path.Combine(filterPath, filterDll);
+			if (File.Exists(path))
+				InstalledVersion = FileVersion.FromExecutable(path);
 		}
 	}
 }
