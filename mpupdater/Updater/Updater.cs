@@ -1,8 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Net;
-using System.Runtime.ExceptionServices;
-using System.Text.RegularExpressions;
 
 namespace mpupdater
 {

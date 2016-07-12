@@ -1,24 +1,54 @@
 ﻿using System;
+using System.Threading;
 
 namespace mpupdater
 {
 	public static class ConsoleExt
 	{
-		/// <summary>
-		/// Used to avoid race conditions during console access.
-		/// </summary>
-		public static readonly object ConsoleLock = new object();
+		public static SingleThreadedExecutionMessageQueue ConsoleMessageQueue { get; set; }
 
-		public static void SafeWriteLine(string text)
+		public static void Invoke(Action a)
 		{
-			lock (ConsoleLock)
-				Console.WriteLine(text);
+			if (ConsoleMessageQueue == null)
+				throw new InvalidOperationException("Message queue must be set.");
+
+			if (ConsoleMessageQueue.CheckAccess())
+				throw new InvalidOperationException("Invoke called from the message queue thread.");
+
+			var oldSyncContext = SynchronizationContext.Current;
+
+			try
+			{
+				SynchronizationContext.SetSynchronizationContext(ConsoleMessageQueue.DefaultSynchronizationContext);
+				var operation = ConsoleMessageQueue.EnqueueSynchronous(a);
+
+				operation.Wait();
+
+				if (operation.ExceptionInfo != null)
+					operation.ExceptionInfo.Throw();
+			}
+			finally
+			{
+				SynchronizationContext.SetSynchronizationContext(oldSyncContext);
+			}
 		}
 
-		public static void SafeWrite(string text)
+		public static void InvokeAsync(Action a)
 		{
-			lock (ConsoleLock)
-				Console.Write(text);
+			if (ConsoleMessageQueue == null)
+				throw new InvalidOperationException("Message queue must be set.");
+
+			var oldSyncContext = SynchronizationContext.Current;
+
+			try
+			{
+				SynchronizationContext.SetSynchronizationContext(ConsoleMessageQueue.DefaultSynchronizationContext);
+				ConsoleMessageQueue.Enqueue(a);
+			}
+			finally
+			{
+				SynchronizationContext.SetSynchronizationContext(oldSyncContext);
+			}
 		}
 	}
 }

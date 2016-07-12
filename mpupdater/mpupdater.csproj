@@ -120,8 +120,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConsoleProgressBar.cs" />
     <Compile Include="ConsoleExt.cs" />
+    <Compile Include="Console\ConsoleProgressBar.cs" />
+    <Compile Include="Console\SingleThreadedExecutionMessageQueue.cs" />
+    <Compile Include="Console\SingleThreadSynchronizationContext.cs" />
     <Compile Include="EventArgs\UpdateCheckFinishedEventArgs.cs" />
     <Compile Include="FileVersion.cs" />
     <Compile Include="Interfaces\IDownloader.cs" />
@@ -137,12 +139,16 @@
     <Compile Include="Updater\SubFilterUpdater.cs" />
     <Compile Include="AsyncUpdateController.cs" />
     <Compile Include="Updater\Updater.cs" />
-    <Compile Include="UpdaterException.cs" />
+    <Compile Include="Updater\UpdaterException.cs" />
     <Compile Include="WebRequestDownloadClient.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-    <None Include="app.manifest" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="app.manifest">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

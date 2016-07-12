@@ -8,7 +8,7 @@ namespace mpupdater
 {
 	public static class FileVersion
 	{
-		public static void ToFile(this Version instance, string path)
+		public static void WriteToFile(this Version instance, string path)
 		{
 			using (var versionFileStream = new StreamWriter(path, false))
 			{

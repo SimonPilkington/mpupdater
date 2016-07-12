@@ -23,17 +23,18 @@ namespace mpupdater
 				else
 					message += $"{e.InstalledVersion} is current - No update";
 
-				ConsoleExt.SafeWriteLine(message);
+				ConsoleExt.InvokeAsync(() => Console.WriteLine(message));
 			};
+
 		private static readonly EventHandler startingInstallCallback
-			= (sender, e) => ConsoleExt.SafeWriteLine($"{(sender as IUpdater).Name} - Installing");
+			= (sender, e) => ConsoleExt.InvokeAsync(() => Console.WriteLine($"{(sender as IUpdater).Name} - Installing"));
 		private static readonly EventHandler updateFinishedCallback
-			= (sender, e) => ConsoleExt.SafeWriteLine($"{(sender as IUpdater).Name} - Done");
+			= (sender, e) => ConsoleExt.InvokeAsync(() => Console.WriteLine($"{(sender as IUpdater).Name} - Done"));
 
 		private static readonly EventHandler comPreInstallCallback
-			= (sender, e) => ConsoleExt.SafeWriteLine($"{(sender as IUpdater).Name} - Unregistering old version");
+			= (sender, e) => ConsoleExt.InvokeAsync(() => Console.WriteLine($"{(sender as IUpdater).Name} - Unregistering old version"));
 		private static readonly EventHandler comPostInstallCallback
-			= (sender, e) => ConsoleExt.SafeWriteLine($"{(sender as IUpdater).Name} - Registering new version");
+			= (sender, e) => ConsoleExt.InvokeAsync(() => Console.WriteLine($"{(sender as IUpdater).Name} - Registering new version"));
 
 		public void AssignDefaultCallbacks()
 		{
@@ -70,9 +71,10 @@ namespace mpupdater
 
 		public async Task CheckUpdatesAsync()
 		{
-			var tasks = new List<Task>(updateState.Count);
+			var tasks = new HashSet<Task>();
 
 			foreach (var update in updateState.Keys)
+			{
 				tasks.Add(Task.Run(() =>
 				{
 					try
@@ -85,14 +87,16 @@ namespace mpupdater
 						updateState[update] = false;
 					}
 				}));
+			}
 
 			await Task.WhenAll(tasks).ConfigureAwait(false);	
 		}
 
 		private async Task<Stream> DownloadUpdateAsync(IUpdater update)
 		{
-			var progressBar = ConsoleProgressBar.Create($"{update.Name} - Downloading: ");
-			var progressReportCallback = new Progress<double>((perc) => progressBar.Draw(perc));
+			ConsoleProgressBar progressBar = ConsoleProgressBar.Create($"{update.Name} - Downloading: ");
+			Progress<double> progressReportCallback = new Progress<double>((perc) => progressBar.Draw(perc));
+
 			var downloadClient = new WebRequestDownloadClient(update.AbsoluteUpdateUrl);
 
 			if (DownloadType == UpdateDownloadType.ToMemory)
@@ -115,7 +119,10 @@ namespace mpupdater
 		public async Task DownloadAndInstallUpdatesAsync()
 		{
 			// filter out only those where an update is available, and where the update check did not fault
-			var updates = from entry in updateState where entry.Value == true && entry.Key.UpdateAvailable select entry.Key;
+			var updates = from entry in updateState where
+						  entry.Value == true && // update check did not fault
+						  entry.Key.UpdateAvailable == true
+						  select entry.Key;
 
 			var tasks = new HashSet<Task<Stream>>();
 			var updateTaskMapping = new Dictionary<Task, IUpdater>();
@@ -129,12 +136,12 @@ namespace mpupdater
 			}
 
 			// install one at a time as downloads complete
-			while(tasks.Count > 0)
+			while (tasks.Count > 0)
 			{
 				try
 				{
 					var finishedTask = await Task.WhenAny(tasks).ConfigureAwait(false);
-					var updateDataStream = await finishedTask;
+					var updateDataStream = await finishedTask.ConfigureAwait(false);
 
 					try
 					{
@@ -150,23 +157,18 @@ namespace mpupdater
 						tasks.Remove(finishedTask);
 					}
 				}
-				catch (Exception x)
+				catch (Exception x) when (x is System.Net.WebException || x is IOException)
 				{
-					if (x is System.Net.WebException || x is IOException)
-					{
-						var faultedTask = tasks.Where(t => t.Status == TaskStatus.Faulted).First();
-						UpdateFailed(updateTaskMapping[faultedTask], x.Message);
-						tasks.Remove(faultedTask);
-					}
-					else
-						throw;
+					var faultedTask = tasks.Where(t => t.Status == TaskStatus.Faulted).First();
+					UpdateFailed(updateTaskMapping[faultedTask], x.Message);
+					tasks.Remove(faultedTask);
 				}
 			}
 		}
 
-		private static void UpdateFailed(IUpdater update, string message)
+		private void UpdateFailed(IUpdater update, string message)
 		{
-			Console.Error.WriteLine($"{update.Name} - Failed: {message}");
+			ConsoleExt.InvokeAsync(() => Console.Error.WriteLine($"{update.Name} - Failed: {message}"));
 		}
 	}
 }

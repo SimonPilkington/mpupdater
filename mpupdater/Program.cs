@@ -1,10 +1,38 @@
 ﻿using System;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace mpupdater
 {
 	class Program
 	{
+		static async Task MainAsyncPart()
+		{
+
+#if DEBUG
+			try
+			{
+#endif
+				IUpdater[] updaters = new IUpdater[] { new MediaPlayerUpdater(), new MadVRUpdater(), new SubFilterUpdater() };
+
+				var controller = new AsyncUpdateController(updaters);
+
+				controller.AssignDefaultCallbacks();
+				await controller.CheckUpdatesAsync();
+				await controller.DownloadAndInstallUpdatesAsync();
+#if DEBUG
+			}
+
+			catch (Exception x)
+			{
+				Console.Error.WriteLine("An unhandled exception occurred. Details have been written to error.txt in the current directory.");
+				using (var writer = new System.IO.StreamWriter("error.txt"))
+					writer.Write(x);
+			}
+#endif
+		}
+
 		static void Main(string[] args)
 		{
 			Console.CursorVisible = false;
@@ -18,32 +46,14 @@ namespace mpupdater
 			Console.WriteLine($"Video nonsense updater - version {Assembly.GetExecutingAssembly().GetName().Version} {architecture}");
 			Console.WriteLine();
 
-			IUpdater[] updaters = new IUpdater[] { new MediaPlayerUpdater(), new MadVRUpdater(), new SubFilterUpdater() };
+			var messageQueue = new SingleThreadedExecutionMessageQueue();
+			ConsoleExt.ConsoleMessageQueue = messageQueue;
+			SynchronizationContext.SetSynchronizationContext(messageQueue.DefaultSynchronizationContext);
 
-			var testController = new AsyncUpdateController(updaters);
+			var asyncMainTask = MainAsyncPart();
+			asyncMainTask.ContinueWith(_ => messageQueue.TerminateMessageLoop());
 
-#if !DEBUG
-			try
-			{
-#endif
-				testController.AssignDefaultCallbacks();
-				testController.CheckUpdatesAsync().Wait();
-				testController.DownloadAndInstallUpdatesAsync().Wait();
-#if !DEBUG
-			}
-			catch (AggregateException x)
-			{
-				Console.Error.WriteLine("An unhandled exception occurred. Details have been written to error.txt in the current directory.");
-				using (var writer = new System.IO.StreamWriter("error.txt"))
-				{
-					foreach (var innx in x.InnerExceptions)
-					{
-						writer.WriteLine(x);
-						writer.WriteLine(x.StackTrace);
-					}
-				}
-			}
-#endif
+			messageQueue.EnterMessageLoop();
 
 			Console.ReadKey();
 		}

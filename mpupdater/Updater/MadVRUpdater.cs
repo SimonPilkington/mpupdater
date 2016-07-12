@@ -28,7 +28,7 @@ namespace mpupdater
 		protected override void PostInstallAction()
 		{
 			base.PostInstallAction();
-			AvailableVersion.ToFile(Path.Combine(filterPath, LOCAL_VERSION_FILE_NAME));
+			AvailableVersion.WriteToFile(Path.Combine(filterPath, LOCAL_VERSION_FILE_NAME));
 		}
 
 		protected override void GetInstalledVersion()

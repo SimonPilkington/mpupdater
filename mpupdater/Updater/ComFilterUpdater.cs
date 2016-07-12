@@ -11,9 +11,7 @@ namespace mpupdater
 
 		private void Unregister()
 		{
-#if DEBUG_NET
-			return;
-#endif
+#if !DEBUG_NET
 			try
 			{
 				RegSvr.UnregisterServer(Path.Combine(filterPath, filterDll));
@@ -28,13 +26,12 @@ namespace mpupdater
 
 				throw;
 			}
+#endif
 		}
 
 		private void Register()
 		{
-#if DEBUG_NET
-			return;
-#endif
+#if !DEBUG_NET
 			try
 			{
 				RegSvr.RegisterServer(Path.Combine(filterPath, filterDll));
@@ -49,6 +46,7 @@ namespace mpupdater
 
 				throw;
 			}
+#endif
 		}
 
 		protected override bool PerformPreInstall => InstalledVersion != FileVersion.Zero;
