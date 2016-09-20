@@ -95,25 +95,27 @@ namespace mpupdater
 		private async Task<Stream> DownloadUpdateAsync(IUpdater update)
 		{
 			ConsoleProgressBar progressBar = ConsoleProgressBar.Create($"{update.Name} - Downloading: ");
-			Progress<double> progressReportCallback = new Progress<double>((perc) => progressBar.Draw(perc));
+			var progressReportCallback = new Progress<double>((perc) => progressBar.Draw(perc));
 
 			var downloadClient = new WebRequestDownloadClient(update.AbsoluteUpdateUrl);
 
 			if (DownloadType == UpdateDownloadType.ToMemory)
 			{
 				var downloadTask = downloadClient.DownloadDataAsync(progressReportCallback);
-				return new MemoryStream(await downloadTask.ConfigureAwait(false)); 
+				return new MemoryStream(await downloadTask.ConfigureAwait(false));
 			}
-			else //if (DownloadType == UpdateDownloadType.ToFile)
+			else if (DownloadType == UpdateDownloadType.ToFile)
 			{
 				var destination = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 				var downloadTask = downloadClient.DownloadFileAsync(destination, progressReportCallback);
-				
+
 				await downloadTask.ConfigureAwait(false);
 				File.SetAttributes(destination, FileAttributes.Temporary);
 
 				return new FileStream(destination, FileMode.Open, FileAccess.Read, FileShare.None, 4096, FileOptions.DeleteOnClose);
 			}
+			
+			return null;
 		}
 
 		public async Task DownloadAndInstallUpdatesAsync()
@@ -138,30 +140,22 @@ namespace mpupdater
 			// install one at a time as downloads complete
 			while (tasks.Count > 0)
 			{
+                Task<Stream> finishedTask = null;
 				try
 				{
-					var finishedTask = await Task.WhenAny(tasks).ConfigureAwait(false);
+					finishedTask = await Task.WhenAny(tasks).ConfigureAwait(false);
 					var updateDataStream = await finishedTask.ConfigureAwait(false);
 
-					try
-					{
-						using (updateDataStream)
+					using (updateDataStream)
 							updateTaskMapping[finishedTask].Execute(updateDataStream);
-					}
-					catch (UpdaterException x)
-					{
-						UpdateFailed(updateTaskMapping[finishedTask], x.Message);
-					}
-					finally
-					{
-						tasks.Remove(finishedTask);
-					}
 				}
-				catch (Exception x) when (x is System.Net.WebException || x is IOException)
+				catch (Exception x) when (x is System.Net.WebException || x is IOException || x is UpdaterException)
 				{
-					var faultedTask = tasks.Where(t => t.Status == TaskStatus.Faulted).First();
-					UpdateFailed(updateTaskMapping[faultedTask], x.Message);
-					tasks.Remove(faultedTask);
+					UpdateFailed(updateTaskMapping[finishedTask], x.Message);
+				}
+				finally
+				{
+					tasks.Remove(finishedTask);
 				}
 			}
 		}
