@@ -29,27 +29,31 @@ namespace mpupdater
 
 		public void Draw(double percentage)
 		{
-			int chars = (int)Math.Floor(percentage / (100 / (double)BAR_SIZE));
-
 			int oldLeft = Console.CursorLeft;
 			int oldTop = Console.CursorTop;
 
-			Console.SetCursorPosition(consoleLeft, consoleTop);
+			try
+			{
+				Console.SetCursorPosition(consoleLeft, consoleTop);
+				Console.Write('[');
 
-			Console.Write('[');
+				int chars = (int)Math.Floor(percentage / (100 / (double)BAR_SIZE));
 
-			Console.ForegroundColor = COMPLETE_COLOR;
-			Console.Write(new string(PROGRESS_CHARACTER, chars));
+				Console.ForegroundColor = COMPLETE_COLOR;
+				Console.Write(new string(PROGRESS_CHARACTER, chars));
 
-			Console.ForegroundColor = REMAINING_COLOR;
-			Console.Write(new string(PROGRESS_CHARACTER, BAR_SIZE - chars));
+				Console.ForegroundColor = REMAINING_COLOR;
+				Console.Write(new string(PROGRESS_CHARACTER, BAR_SIZE - chars));
 
-			Console.ResetColor();
-			Console.Write(']');
+				Console.ResetColor();
+				Console.Write(']');
 
-			Console.Write(" {0:F2}%", percentage);
-
-			Console.SetCursorPosition(oldLeft, oldTop);
+				Console.Write(" {0:F2}%", percentage);
+			}
+			finally
+			{
+				Console.SetCursorPosition(oldLeft, oldTop);
+			}
 		}
 	}
 }

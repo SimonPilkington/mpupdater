@@ -67,21 +67,10 @@ namespace mpupdater
 
 			try
 			{
-				try
-				{
-					using (var extractor = new ZipArchive(updateStream))
-						extractor.ExtractToDirectory(tempDir);
+				using (var extractor = new ZipArchive(updateStream))
+					extractor.ExtractToDirectory(tempDir);
 
-					IOExt.MoveDirWithOverwrite(tempDir, filterPath);
-				}
-				catch (UnauthorizedAccessException x)
-				{
-					throw new UpdaterException("Could not overwrite old version. Installation may be in an invalid state. If the player is running, close and restart the update.", x);
-				}
-				catch (IOException x)
-				{
-					throw new UpdaterException(x.Message, x);
-				}
+				IOExt.MoveDirWithOverwrite(tempDir, filterPath);
 			}
 			finally
 			{
