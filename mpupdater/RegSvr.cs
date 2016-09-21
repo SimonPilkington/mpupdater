@@ -6,7 +6,7 @@ namespace mpupdater
 	/// <summary>
 	/// Wrapper class for registrable COM modules.
 	/// </summary>
-	public class RegSvr : IDisposable
+	public sealed class RegSvr : IDisposable
 	{
 		private bool disposed = false;
 		
@@ -85,7 +85,7 @@ namespace mpupdater
 			GC.SuppressFinalize(this);
 		}
 
-		protected virtual void Dispose(bool disposing)
+		private void Dispose(bool disposing)
 		{
 			if (!disposed)
 			{

@@ -142,8 +142,20 @@ namespace mpupdater
 			}
 
 			OnStartingInstall();
-			using (updateDataStream)
-				Install(updateDataStream);
+
+			try
+			{
+				using (updateDataStream)
+					Install(updateDataStream);
+			}
+			catch (UnauthorizedAccessException x)
+			{
+				throw new UpdaterException("Could not overwrite old version. Installation may be in an invalid state. Close any open relevant open programs and try again.", x);
+			}
+			catch (IOException x)
+			{
+				throw new UpdaterException(x.Message, x);
+			}
 
 			if (PerformPostInstall)
 			{

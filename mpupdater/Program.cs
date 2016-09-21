@@ -10,7 +10,7 @@ namespace mpupdater
 		static async Task MainAsyncPart()
 		{
 
-#if DEBUG
+#if !DEBUG
 			try
 			{
 #endif
@@ -21,7 +21,7 @@ namespace mpupdater
 				controller.AssignDefaultCallbacks();
 				await controller.CheckUpdatesAsync();
 				await controller.DownloadAndInstallUpdatesAsync();
-#if DEBUG
+#if !DEBUG
 			}
 
 			catch (Exception x)

@@ -60,7 +60,7 @@ namespace mpupdater
 			}
 		}
 
-		private readonly Thread owner = Thread.CurrentThread;
+		private readonly Thread ownerThread = Thread.CurrentThread;
 		private BlockingCollection<QueueOperation> actionQueue = new BlockingCollection<QueueOperation>();
 
 		public SingleThreadSynchronizationContext DefaultSynchronizationContext { get; }
@@ -79,19 +79,19 @@ namespace mpupdater
 
 		public void Enqueue(SendOrPostCallback d, object state)
 		{
-			var operation = new QueueOperation(d, state, owner, false);
+			var operation = new QueueOperation(d, state, ownerThread, false);
 			actionQueue.Add(operation);
 		}
 
 		public void Enqueue(Action a)
 		{
-			var operation = new QueueOperation((s) => a(), null, owner, false);
+			var operation = new QueueOperation((s) => a(), null, ownerThread, false);
 			actionQueue.Add(operation);
 		}
 
 		public QueueOperation EnqueueSynchronous(SendOrPostCallback d, object state)
 		{
-			var operation = new QueueOperation(d, state, owner, true);
+			var operation = new QueueOperation(d, state, ownerThread, true);
 			actionQueue.Add(operation);
 
 			return operation;
@@ -99,7 +99,7 @@ namespace mpupdater
 
 		public QueueOperation EnqueueSynchronous(Action a)
 		{
-			var operation = new QueueOperation((s) => a(), null, owner, true);
+			var operation = new QueueOperation((s) => a(), null, ownerThread, true);
 			actionQueue.Add(operation);
 
 			return operation;
@@ -112,7 +112,7 @@ namespace mpupdater
 
 		public bool CheckAccess()
 		{
-			return Thread.CurrentThread == owner;
+			return Thread.CurrentThread == ownerThread;
 		}
 	}
 }

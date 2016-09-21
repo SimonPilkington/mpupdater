@@ -40,30 +40,19 @@ namespace mpupdater
 		protected override void Install(Stream updateStream)
 		{
 			string tempDir = null;
-			
+
 			try
 			{
-				try
+				using (var extractor = new SevenZip.SevenZipExtractor(updateStream))
 				{
-					using (var extractor = new SevenZip.SevenZipExtractor(updateStream))
-					{
-						extractor.ExtractArchive(Path.GetTempPath());
-						tempDir = Path.Combine(Path.GetTempPath(), extractor.ArchiveFileNames[extractor.ArchiveFileNames.Count - 1]);
-					}
-					IOExt.MoveDirWithOverwrite(tempDir, MEDIA_PLAYER_PATH);
+					extractor.ExtractArchive(Path.GetTempPath());
+					tempDir = Path.Combine(Path.GetTempPath(), extractor.ArchiveFileNames[extractor.ArchiveFileNames.Count - 1]);
 				}
-				catch (UnauthorizedAccessException x)
-				{
-					throw new UpdaterException("Could not overwrite old version. Installation may be in an invalid state. If the player is running, close and restart the update.", x);
-				}
-				catch (IOException x)
-				{
-					throw new UpdaterException(x.Message, x);
-				}
-				catch (SevenZip.SevenZipException x)
-				{
-					throw new UpdaterException(x.Message, x);
-				}
+				IOExt.MoveDirWithOverwrite(tempDir, MEDIA_PLAYER_PATH);
+			}
+			catch (SevenZip.SevenZipException x)
+			{
+				throw new UpdaterException(x.Message, x);
 			}
 			finally
 			{
