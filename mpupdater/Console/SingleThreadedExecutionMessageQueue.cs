@@ -57,6 +57,9 @@ namespace mpupdater
 
 				invokeEvent.Wait();
 				invokeEvent.Dispose();
+
+				// If an exception was thrown by the operation, rethrow on the waiting thread.
+				ExceptionInfo?.Throw();
 			}
 		}
 
