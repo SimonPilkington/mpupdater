@@ -10,9 +10,8 @@ namespace mpupdater
 	/// </summary>
 	public class WebRequestDownloadClient : IDownloader
 	{
-		private const int CHUNK_SIZE = 16384;
-
-		Uri resource;
+		private const int CHUNK_SIZE = 65536;
+		private readonly Uri resource;
 
 		public double ProgressReportPercentageIncrement { get; set; }
 
@@ -22,37 +21,29 @@ namespace mpupdater
 			ProgressReportPercentageIncrement = 0.15;
 		}
 
-		private WebResponse SendRequest()
-		{
-			var request = WebRequest.Create(resource);
-			var response = request.GetResponse();
-
-			return response;
-		}
-
 		/// <summary>
 		/// Download data from a web resource after the request has been sent.
 		/// </summary>
-		/// <param name="response">The response, returned by SendRequest.</param>
+		/// <param name="response">A WebResponse object.</param>
 		/// <param name="outStream">The stream to write the data to.</param>
-		/// <param name="progressReport">Object implementing IProgress to report the progress of an aync download operation. This parm can be null.</param>
-		private void GetBytesFromResponse(WebResponse response, Stream outStream, IProgress<double> progressReport)
+		/// <param name="progressReport">Object implementing IProgress to report the progress of an aync download operation. This can be null.</param>
+		private async Task GetBytesFromResponse(WebResponse response, Stream outStream, IProgress<double> progressReport)
 		{
 			var responseStream = response.GetResponseStream();
 
 			var downloadBuffer = new byte[CHUNK_SIZE];
-			int totalBytesReceived = 0;
+			long totalBytesReceived = 0;
 
 			int bytesPerProgressReport = (int)(response.ContentLength / (100 / ProgressReportPercentageIncrement));
 			int progressCounter = 0;
 
 			do
 			{
-				int bytesReceived = responseStream.Read(downloadBuffer, 0, CHUNK_SIZE);
+				int bytesReceived = await responseStream.ReadAsync(downloadBuffer, 0, CHUNK_SIZE).ConfigureAwait(false);
 
 				if (bytesReceived > 0)
 				{
-					outStream.Write(downloadBuffer, 0, bytesReceived);
+					await outStream.WriteAsync(downloadBuffer, 0, bytesReceived).ConfigureAwait(false);
 					totalBytesReceived += bytesReceived;
 
 					if (progressReport != null)
@@ -71,50 +62,40 @@ namespace mpupdater
 			} while (totalBytesReceived < response.ContentLength);
 		}
 		
-		public byte[] DownloadData() => DownloadData(null);
+		public Task<byte[]> DownloadDataAsync() => DownloadDataAsync(null);
 
-		private byte[] DownloadData(IProgress<double> progressReportCallback)
+		public async Task<byte[]> DownloadDataAsync(IProgress<double> progressReportCallback)
 		{
-			var response = SendRequest();
+			var request = WebRequest.Create(resource);
+			var response = await request.GetResponseAsync().ConfigureAwait(false);
 
 			var outBytes = new byte[response.ContentLength];
 			var destStream = new MemoryStream(outBytes);
 
 			using (response)
+			{
 				using (destStream)
-					GetBytesFromResponse(response, destStream, progressReportCallback);
+					await GetBytesFromResponse(response, destStream, progressReportCallback).ConfigureAwait(false);
+			}
 
 			return outBytes;
 		}
 		
-		public void DownloadFile() => DownloadFile(null, null);
-		public void DownloadFile(string destination) => DownloadFile(destination, null);
+		public Task DownloadFileAsync() => DownloadFileAsync(null, null);
+		public Task DownloadFileAsync(IProgress<double> progressReportCallback) => DownloadFileAsync(null, progressReportCallback);
+		public Task DownloadFileAsync(string destination) => DownloadFileAsync(destination, null);
 
-		private void DownloadFile(string destination, IProgress<double> progressReportCallback)
+		public async Task DownloadFileAsync(string destination, IProgress<double> progressReportCallback)
 		{
-			var response = SendRequest();
-
-			string fileDestionation = destination ?? Path.GetFileName(response.ResponseUri.LocalPath);
-			var destStream = new FileStream(fileDestionation, FileMode.Create);
+			var request = WebRequest.Create(resource);
+			var response = await request.GetResponseAsync().ConfigureAwait(false);
+			var destStream = new FileStream(destination ?? Path.GetFileName(response.ResponseUri.LocalPath), FileMode.Create);
 
 			using (response)
+			{
 				using (destStream)
-					GetBytesFromResponse(response, destStream, progressReportCallback);
-		}
-
-		public Task<byte[]> DownloadDataAsync(IProgress<double> progressReportCallback)
-		{
-			return Task.Run(() => DownloadData(progressReportCallback));
-		}
-
-		public Task DownloadFileAsync(IProgress<double> progressReportCallback)
-		{
-			return Task.Run(() => DownloadFile(null, progressReportCallback));
-		}
-
-		public Task DownloadFileAsync(string destination, IProgress<double> progressReportCallback)
-		{
-			return Task.Run(() => DownloadFile(destination, progressReportCallback));
+					await GetBytesFromResponse(response, destStream, progressReportCallback).ConfigureAwait(false);
+			}
 		}
 	}
 }

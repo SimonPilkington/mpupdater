@@ -31,11 +31,15 @@ namespace mpupdater
 
 			// some libraries (madVR) try to load other libraries, which can fail unless we switch the current directory
 			string oldCurrentDir = Directory.GetCurrentDirectory();
-			Directory.SetCurrentDirectory(Path.GetDirectoryName(Path.GetFullPath(libPath)));
-
-			libHandle = NativeMethods.LoadLibrary(Path.GetFileName(libPath));
-
-			Directory.SetCurrentDirectory(oldCurrentDir);
+			try
+			{
+				Directory.SetCurrentDirectory(Path.GetDirectoryName(Path.GetFullPath(libPath)));
+				libHandle = NativeMethods.LoadLibrary(Path.GetFileName(libPath));
+			}
+			finally
+			{
+				Directory.SetCurrentDirectory(oldCurrentDir);
+			}
 
 			if (libHandle == IntPtr.Zero)
 				throw new ServerRegException("Could not load " + libPath);

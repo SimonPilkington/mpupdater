@@ -23,9 +23,6 @@ namespace mpupdater
 				var operation = ConsoleMessageQueue.EnqueueSynchronous(a);
 
 				operation.Wait();
-
-				if (operation.ExceptionInfo != null)
-					operation.ExceptionInfo.Throw();
 			}
 			finally
 			{

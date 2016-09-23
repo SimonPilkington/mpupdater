@@ -5,11 +5,11 @@ namespace mpupdater
 {
 	public interface IDownloader
 	{
-		byte[] DownloadData();
-		void DownloadFile();
-		void DownloadFile(string destination);
-
+		Task<byte[]> DownloadDataAsync();
 		Task<byte[]> DownloadDataAsync(IProgress<double> progressReportCallback);
+
+		Task DownloadFileAsync();
+		Task DownloadFileAsync(string destination);
 		Task DownloadFileAsync(IProgress<double> progressReportCallback);
 		Task DownloadFileAsync(string destination, IProgress<double> progressReportCallback);
 	}

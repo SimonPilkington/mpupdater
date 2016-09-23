@@ -19,10 +19,8 @@ namespace mpupdater
 				throw new InvalidOperationException("Send called from the message queue thread.");
 
 			var operation = actionMessageQueue.EnqueueSynchronous(d, state);
-			operation.Wait();
 
-			if (operation.ExceptionInfo != null)
-				operation.ExceptionInfo.Throw();
+			operation.Wait();
 		}
 
 		public override void Post(SendOrPostCallback d, object state)
