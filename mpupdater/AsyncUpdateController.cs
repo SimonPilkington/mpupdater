@@ -18,7 +18,7 @@ namespace mpupdater
 			{
 				string message = $"{(sender as IUpdater).Name} - ";
 
-				if (e.AvailableVersion > e.InstalledVersion)
+				if (e.AvailableVersion.CompareTo(e.InstalledVersion) > 0)
 					message += $"{e.AvailableVersion} > {e.InstalledVersion} - Update found";
 				else
 					message += $"{e.InstalledVersion} is current - No update";

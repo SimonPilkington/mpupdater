@@ -28,14 +28,14 @@ namespace mpupdater
 		protected override void PostInstallAction()
 		{
 			base.PostInstallAction();
-			AvailableVersion.WriteToFile(Path.Combine(filterPath, LOCAL_VERSION_FILE_NAME));
+			((NumberVersion)AvailableVersion).WriteToFile(Path.Combine(filterPath, LOCAL_VERSION_FILE_NAME));
 		}
 
 		protected override void GetInstalledVersion()
 		{
 			string path = Path.Combine(filterPath, LOCAL_VERSION_FILE_NAME);
 			if (File.Exists(path))
-				InstalledVersion = FileVersion.FromFile(path);
+				InstalledVersion = NumberVersion.FromFile(path);
 		}
 	}
 }

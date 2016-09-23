@@ -125,10 +125,12 @@
     <Compile Include="Console\SingleThreadedExecutionMessageQueue.cs" />
     <Compile Include="Console\SingleThreadSynchronizationContext.cs" />
     <Compile Include="EventArgs\UpdateCheckFinishedEventArgs.cs" />
-    <Compile Include="FileVersion.cs" />
     <Compile Include="Interfaces\IDownloader.cs" />
     <Compile Include="Interfaces\IUpdater.cs" />
+    <Compile Include="Interfaces\IVersion.cs" />
     <Compile Include="IOExt.cs" />
+    <Compile Include="NumberVersion.cs" />
+    <Compile Include="TimestampVersion.cs" />
     <Compile Include="Updater\ComFilterUpdater.cs" />
     <Compile Include="Updater\MadVRUpdater.cs" />
     <Compile Include="Updater\MediaPlayerUpdater.cs" />

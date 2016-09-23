@@ -4,10 +4,10 @@ namespace mpupdater
 {
 	public class UpdateCheckFinishedEventArgs : EventArgs
 	{
-		public Version InstalledVersion { get; }
-		public Version AvailableVersion { get; }
+		public IVersion InstalledVersion { get; }
+		public IVersion AvailableVersion { get; }
 
-		public UpdateCheckFinishedEventArgs(Version installedVersion, Version availableVersion)
+		public UpdateCheckFinishedEventArgs(IVersion installedVersion, IVersion availableVersion)
 		{
 			InstalledVersion = installedVersion;
 			AvailableVersion = availableVersion;

@@ -49,7 +49,7 @@ namespace mpupdater
 #endif
 		}
 
-		protected override bool PerformPreInstall => InstalledVersion != FileVersion.Zero;
+		protected override bool PerformPreInstall => InstalledVersion.Installed;
 		protected override void PreInstallAction()
 		{
 			Unregister();

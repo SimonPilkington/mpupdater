@@ -22,8 +22,8 @@ namespace mpupdater
 			private set;
 		}
 		
-		private Version _availableVersion;
-		public Version AvailableVersion
+		private IVersion _availableVersion = NumberVersion.NotInstalled;
+		public IVersion AvailableVersion
 		{
 			get
 			{
@@ -35,8 +35,8 @@ namespace mpupdater
 			protected set { _availableVersion = value; }
 		}
 
-		private Version _installedVersion;
-		public Version InstalledVersion
+		private IVersion _installedVersion = NumberVersion.NotInstalled;
+		public IVersion InstalledVersion
 		{
 			get
 			{
@@ -53,7 +53,7 @@ namespace mpupdater
 			get
 			{
 				if (State > UpdaterState.Pending)
-					return AvailableVersion > (InstalledVersion);
+					return AvailableVersion.CompareTo(InstalledVersion) > 0;
 
 				throw new InvalidOperationException("Update check has not been performed. Call CheckUpdate first.");
 			}
@@ -73,9 +73,6 @@ namespace mpupdater
 		
 		public Updater()
 		{
-			_installedVersion = FileVersion.Zero;
-			_availableVersion = FileVersion.Zero;
-
 			State = UpdaterState.Pending;
 		}
 
@@ -85,7 +82,7 @@ namespace mpupdater
 		{
 			try
 			{
-				AvailableVersion = FileVersion.FromWebResource(VersionUrl, VersionSearchPrefix);
+				AvailableVersion = NumberVersion.FromWebResource(VersionUrl, VersionSearchPrefix);
 			}
 			catch (WebException x)
 			{

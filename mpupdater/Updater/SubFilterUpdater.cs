@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace mpupdater
 {
@@ -27,7 +28,7 @@ namespace mpupdater
 		{
 			string path = Path.Combine(filterPath, filterDll);
 			if (File.Exists(path))
-				InstalledVersion = FileVersion.FromExecutable(path);
+				InstalledVersion = NumberVersion.FromExecutable(path);
 		}
 	}
 }

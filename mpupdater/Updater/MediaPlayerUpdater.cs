@@ -34,7 +34,7 @@ namespace mpupdater
 		{
 			string path = Path.Combine(MEDIA_PLAYER_PATH, MEDIA_PLAYER_EXECUTABLE);
 			if (File.Exists(path))
-				InstalledVersion = FileVersion.FromExecutable(path);
+				InstalledVersion = NumberVersion.FromExecutable(path);
 		}
 
 		protected override void Install(Stream updateStream)
