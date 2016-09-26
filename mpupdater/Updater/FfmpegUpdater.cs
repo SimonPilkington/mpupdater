@@ -1,10 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace mpupdater
 {
@@ -17,7 +13,7 @@ namespace mpupdater
 #endif
 
 		#region Properties
-		public override string Name => "FFMpeg";
+		public override string Name => "FFmpeg";
 
 #if WIN64
 #if !DEBUG_NET

@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace mpupdater
@@ -38,7 +37,7 @@ namespace mpupdater
 
 		public void AssignDefaultCallbacks()
 		{
-			foreach (var updater in updateState.Keys)
+			foreach (var updater in updatesToPerform)
 			{
 				updater.UpdateCheckFinished += checkFinishedCallback;
 				updater.StartingInstall += startingInstallCallback;
@@ -61,30 +60,34 @@ namespace mpupdater
 
 		public UpdateDownloadType DownloadType { get; set; }
 
-		private readonly ConcurrentDictionary<IUpdater, bool> updateState; // true if update can continue, false if faulted during the check
+		private readonly ConcurrentBag<IUpdater> updatesToInstall; // ie. updates that are available and didn't fault during the check.
+		private readonly IEnumerable<IUpdater> updatesToPerform;
 
 		public AsyncUpdateController(params IUpdater[] updateQueue)
 		{
 			DownloadType = UpdateDownloadType.ToFile;
-			updateState = new ConcurrentDictionary<IUpdater, bool>(updateQueue.ToDictionary(x => x, x => true));
+			updatesToInstall = new ConcurrentBag<IUpdater>();
+			updatesToPerform = updateQueue;
 		}
 
 		public async Task CheckUpdatesAsync()
 		{
-			var tasks = new HashSet<Task>();
+			var tasks = new List<Task>();
 
-			foreach (var update in updateState.Keys)
+			foreach (var update in updatesToPerform)
 			{
 				tasks.Add(Task.Run(() =>
 				{
 					try
 					{
 						update.CheckUpdate();
+
+						if (update.UpdateAvailable)
+							updatesToInstall.Add(update);
 					}
 					catch (UpdaterException x)
 					{
 						UpdateFailed(update, x.Message);
-						updateState[update] = false;
 					}
 				}));
 			}
@@ -120,21 +123,16 @@ namespace mpupdater
 
 		public async Task DownloadAndInstallUpdatesAsync()
 		{
-			// filter out only those where an update is available, and where the update check did not fault
-			var updates = from entry in updateState where
-						  entry.Value == true && // update check did not fault
-						  entry.Key.UpdateAvailable == true
-						  select entry.Key;
-
 			var tasks = new HashSet<Task<Stream>>();
 			var updateTaskMapping = new Dictionary<Task, IUpdater>();
 
 			// download concurrently
-			foreach (var update in updates)
+			IUpdater current;
+			while(updatesToInstall.TryTake(out current))
 			{
-				var task = DownloadUpdateAsync(update);
+				var task = DownloadUpdateAsync(current);
 				tasks.Add(task);
-				updateTaskMapping[task] = update;
+				updateTaskMapping[task] = current;
 			}
 
 			// install one at a time as downloads complete

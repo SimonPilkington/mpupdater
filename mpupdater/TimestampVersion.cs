@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 using System.Text.RegularExpressions;
 
 namespace mpupdater
@@ -88,9 +87,6 @@ namespace mpupdater
 		{
 			using (var client = SpoofedWebClient.Create())
 			{
-				// Some hosts don't like weird user agents, so pretend we're IE11.
-				client.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
-
 				string pageData = client.DownloadString(url);
 				Match versionInfo = Regex.Match(pageData, regex);
 
