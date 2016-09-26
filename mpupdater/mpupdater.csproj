@@ -130,8 +130,10 @@
     <Compile Include="Interfaces\IVersion.cs" />
     <Compile Include="IOExt.cs" />
     <Compile Include="NumberVersion.cs" />
+    <Compile Include="SpoofedWebClient.cs" />
     <Compile Include="TimestampVersion.cs" />
     <Compile Include="Updater\ComFilterUpdater.cs" />
+    <Compile Include="Updater\FfmpegUpdater.cs" />
     <Compile Include="Updater\MadVRUpdater.cs" />
     <Compile Include="Updater\MediaPlayerUpdater.cs" />
     <Compile Include="NativeMethods.cs" />

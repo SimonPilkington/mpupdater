@@ -86,7 +86,7 @@ namespace mpupdater
 
 		public static TimestampVersion FromWebResource(Uri url, string regex = "")
 		{
-			using (var client = new WebClient())
+			using (var client = SpoofedWebClient.Create())
 			{
 				// Some hosts don't like weird user agents, so pretend we're IE11.
 				client.Headers.Add("user-agent", "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko");
@@ -97,13 +97,13 @@ namespace mpupdater
 				if (!versionInfo.Success)
 					throw new FormatException("Couldn't parse version info at URL.");
 
-				return Parse(versionInfo.Groups[1].Value);
+				return Parse(versionInfo.Groups[0].Value);
 			}
 		}
 
 		public override string ToString()
 		{
-			return internalVersion?.ToString() ?? "Not installed";
+			return internalVersion?.ToString("yyyy-MM-dd") ?? "Not installed";
 		}
 	}
 }

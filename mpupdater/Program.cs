@@ -14,7 +14,7 @@ namespace mpupdater
 			try
 			{
 #endif
-				IUpdater[] updaters = new IUpdater[] { new MediaPlayerUpdater(), new MadVRUpdater(), new SubFilterUpdater() };
+				IUpdater[] updaters = new IUpdater[] { new MediaPlayerUpdater(), new MadVRUpdater(), new SubFilterUpdater(), new FfmpegUpdater() };
 
 				var controller = new AsyncUpdateController(updaters);
 
