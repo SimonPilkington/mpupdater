@@ -15,42 +15,6 @@ namespace mpupdater
 		const string architecture = "x86";
 #endif
 
-		const string help = "Available options are:\n\nconfigure - set up the updates you wish to receive.\nhelp - show this text.";
-		
-		static async Task UpdateAsync()
-		{
-
-#if !DEBUG
-			try
-			{
-#endif
-				var updates = new List<IUpdater>();
-				if (Properties.Settings.Default.UpdateMpchc)
-					updates.Add(new MediaPlayerUpdater());
-				if (Properties.Settings.Default.UpdateMadvr)
-					updates.Add(new MadVRUpdater());
-				if (Properties.Settings.Default.UpdateXySubFIlter)
-					updates.Add(new SubFilterUpdater());
-				if (Properties.Settings.Default.UpdateFfmpeg)
-					updates.Add(new FfmpegUpdater());
-
-				var controller = new AsyncUpdateController(updates.ToArray());
-
-				controller.AssignDefaultCallbacks();
-				await controller.CheckUpdatesAsync();
-				await controller.DownloadAndInstallUpdatesAsync();
-#if !DEBUG
-			}
-
-			catch (Exception x)
-			{
-				Console.Error.WriteLine("An unhandled exception occurred. Details have been written to error.txt in the current directory.");
-				using (var writer = new System.IO.StreamWriter("error.txt"))
-					writer.Write(x);
-			}
-#endif
-		}
-
 		static void Main(string[] args)
 		{
 			Console.CursorVisible = false;
@@ -91,6 +55,40 @@ namespace mpupdater
 			}
 
 			Console.ReadKey();
+		}
+
+		static async Task UpdateAsync()
+		{
+
+#if !DEBUG
+			try
+			{
+#endif
+			var updates = new List<IUpdater>();
+			if (Properties.Settings.Default.UpdateMpchc)
+				updates.Add(new MediaPlayerUpdater());
+			if (Properties.Settings.Default.UpdateMadvr)
+				updates.Add(new MadVRUpdater());
+			if (Properties.Settings.Default.UpdateXySubFIlter)
+				updates.Add(new SubFilterUpdater());
+			if (Properties.Settings.Default.UpdateFfmpeg)
+				updates.Add(new FfmpegUpdater());
+
+			var controller = new AsyncUpdateController(updates.ToArray());
+
+			controller.AssignDefaultCallbacks();
+			await controller.CheckUpdatesAsync();
+			await controller.DownloadAndInstallUpdatesAsync();
+#if !DEBUG
+			}
+
+			catch (Exception x)
+			{
+				Console.Error.WriteLine("An unhandled exception occurred. Details have been written to error.txt in the current directory.");
+				using (var writer = new System.IO.StreamWriter("error.txt"))
+					writer.Write(x);
+			}
+#endif
 		}
 
 		private static void SetupConfig()
