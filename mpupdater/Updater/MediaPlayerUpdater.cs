@@ -45,7 +45,7 @@ namespace mpupdater
 				using (var extractor = new SevenZip.SevenZipExtractor(updateStream))
 				{
 					extractor.ExtractArchive(Path.GetTempPath());
-					tempDir = Path.Combine(Path.GetTempPath(), extractor.ArchiveFileNames[extractor.ArchiveFileNames.Count - 1]);
+					tempDir = Path.Combine(Path.GetTempPath(), Path.GetFileNameWithoutExtension(UpdateRelativeUrl));
 				}
 				IOExt.MoveDirWithOverwrite(tempDir, MEDIA_PLAYER_PATH);
 			}
