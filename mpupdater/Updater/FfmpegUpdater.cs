@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.IO.Compression;
 using System.Text.RegularExpressions;
 
 namespace mpupdater
@@ -12,29 +13,29 @@ namespace mpupdater
 		private const string FFMPEG_PATH = "./ffmpeg-latest-win32-shared";
 #endif
 
-		#region Properties
+#region Properties
 		public override string Name => "FFmpeg";
 
 #if WIN64
 #if !DEBUG_NET
 		protected override string UpdateRootUrl => "https://ffmpeg.zeranoe.com/builds/win64/shared/";	
 #endif //DEBUG_NET
-		protected override string UpdateRelativeUrl => "ffmpeg-latest-win64-shared.7z";
+		protected override string UpdateRelativeUrl => "ffmpeg-latest-win64-shared.zip";
 #else
 #if !DEBUG_NET
 		protected override string UpdateRootUrl => "https://ffmpeg.zeranoe.com/builds/win32/shared/";
 #endif //DEBUG_NET
-		protected override string UpdateRelativeUrl => "ffmpeg-latest-win32-shared.7z";
+		protected override string UpdateRelativeUrl => "ffmpeg-latest-win32-shared.zip";
 #endif //WIN64
 
 #if !DEBUG_NET
-		protected override string VersionUrl => UpdateRootUrl;
+		protected override string VersionUrl => UpdateRootUrl + @"?C=M&O=D";
 #endif
-		#endregion
+#endregion
 
 		protected override void GetInstalledVersion()
 		{
-			const string versionRegexString = @"version: (\d{4})(\d{2})(\d{2})";
+			const string versionRegexString = @"Build: ffmpeg-(\d{4})(\d{2})(\d{2})";
 			string readmePath = Path.Combine(FFMPEG_PATH, "README.txt");
 
 			if (!File.Exists(readmePath))
@@ -64,7 +65,7 @@ namespace mpupdater
 
 		protected override void GetAvailableVersion()
 		{
-			const string webVersionRegex = @"\d{2}-\w{3}-\d{4}";
+			const string webVersionRegex = @"\d{4}-\w{3}-\d{2}";
 
 			try
 			{
@@ -82,18 +83,16 @@ namespace mpupdater
 
 		protected override void Install(Stream updateDataStream)
 		{
-			string tempDir = null;
+			string tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()); ;
 
 			try
 			{
-				using (var extractor = new SevenZip.SevenZipExtractor(updateDataStream))
-				{
-					extractor.ExtractArchive(Path.GetTempPath());
-					tempDir = Path.Combine(Path.GetTempPath(), extractor.ArchiveFileNames[extractor.ArchiveFileNames.Count - 1]);
-				}
-				IOExt.MoveDirWithOverwrite(tempDir, FFMPEG_PATH);
+				using (var extractor = new ZipArchive(updateDataStream))
+					extractor.ExtractToDirectory(tempDir);
+
+				IOExt.MoveDirWithOverwrite(Path.Combine(tempDir, FFMPEG_PATH), FFMPEG_PATH);
 			}
-			catch (SevenZip.SevenZipException x)
+			catch (InvalidDataException x)
 			{
 				throw new UpdaterException(x.Message, x);
 			}
